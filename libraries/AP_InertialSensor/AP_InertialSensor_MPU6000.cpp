@@ -3,7 +3,12 @@
 
 #include "AP_InertialSensor_MPU6000.h"
 
+#if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
 #include <SPI.h>
+#else
+#include <I2C.h>
+#endif
+
 #if defined(ARDUINO) && ARDUINO >= 100
  #include "Arduino.h"
 #else
@@ -138,6 +143,7 @@
 // Product ID Description for MPU6000
 // high 4 bits  low 4 bits
 // Product Name	Product Revision
+#define MPU6000_REV_A4                          0x04    // 0000                 0100
 #define MPU6000ES_REV_C4                        0x14    // 0001			0100
 #define MPU6000ES_REV_C5                        0x15    // 0001			0101
 #define MPU6000ES_REV_D6                        0x16    // 0001			0110
@@ -161,8 +167,11 @@
 #define GYRO_BIAS_FROM_GRAVITY_RATE 4  // Rate of the gyro bias from gravity correction (200Hz/4) => 50Hz
 #define DEFAULT_ACCEL_FUSION_GAIN       0x80    // Default gain for accel fusion (with gyros)
 
-
+#if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
 uint8_t AP_InertialSensor_MPU6000::_cs_pin;
+#else
+uint16_t AP_InertialSensor_MPU6000::_addr;
+#endif
 
 /*
  *  RS-MPU-6000A-00.pdf, page 33, section 4.25 lists LSB sensitivity of
@@ -201,6 +210,7 @@ uint8_t AP_InertialSensor_MPU6000::_fifoCountH;                 // high byte of 
 uint8_t AP_InertialSensor_MPU6000::_fifoCountL;                 // low byte of number of elements in fifo buffer
 Quaternion AP_InertialSensor_MPU6000::quaternion;                       // holds the 4 quaternions representing attitude taken directly from the DMP
 
+#if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
 AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000( uint8_t cs_pin )
 {
     _cs_pin = cs_pin; /* can't use initializer list,  is static */
@@ -214,6 +224,21 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000( uint8_t cs_pin )
     _initialised = false;
     _dmp_initialised = false;
 }
+#else
+AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000( uint16_t addr  )
+{
+    _addr = addr; /* can't use initializer list,  is static */
+    _gyro.x = 0;
+    _gyro.y = 0;
+    _gyro.z = 0;
+    _accel.x = 0;
+    _accel.y = 0;
+    _accel.z = 0;
+    _temp = 0;
+    _initialised = false;
+    _dmp_initialised = false;
+}
+#endif
 
 uint16_t AP_InertialSensor_MPU6000::init( AP_PeriodicProcess * scheduler )
 {
@@ -337,7 +362,7 @@ void AP_InertialSensor_MPU6000::reset_sample_time()
 }
 
 /*================ HARDWARE FUNCTIONS ==================== */
-
+#if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
 static int16_t spi_transfer_16(void)
 {
     uint8_t byte_H, byte_L;
@@ -404,6 +429,61 @@ void AP_InertialSensor_MPU6000::register_write(uint8_t reg, uint8_t val)
     SPI.transfer(val);
     digitalWrite(_cs_pin, HIGH);
 }
+#else
+/*
+ *  this is called from a timer interrupt to read data from the MPU6000
+ *  and add it to _sum[]
+ */
+void AP_InertialSensor_MPU6000::read(uint32_t )
+{
+    if (_new_data == 0) {
+        // no new data is ready from the MPU6000
+        return;
+    }
+    _new_data = 0;
+
+    // now read the data
+    uint8_t rawMPU[14];
+
+    if (I2c.read(_addr, MPUREG_ACCEL_XOUT_H, 14, rawMPU) != 0) {
+        return;
+    }
+    for (uint8_t i=0; i<7; i++) {
+        _sum[i] += (((int16_t)rawMPU[i*2])<<8) | rawMPU[(i*2)+1];
+    }
+
+    _count++;
+    if (_count == 0) {
+        // rollover - v unlikely
+        memset((void*)_sum, 0, sizeof(_sum));
+    }
+
+    // should also read FIFO data if enabled
+    if( _dmp_initialised ) {
+        if( FIFO_ready() ) {
+            FIFO_getPacket();
+        }
+    }
+}
+
+uint8_t AP_InertialSensor_MPU6000::register_read( uint8_t reg )
+{
+    uint8_t return_value;
+
+    if (I2c.read(_addr, reg, 1, &return_value) != 0) {
+        return;
+    }
+
+    return return_value;
+}
+
+void AP_InertialSensor_MPU6000::register_write(uint8_t reg, uint8_t val)
+{
+    if (I2c.write(_addr, reg, val) != 0) {
+        return;
+    }
+}
+#endif
 
 // MPU6000 new data interrupt on INT6
 void AP_InertialSensor_MPU6000::data_interrupt(void)
@@ -412,6 +492,7 @@ void AP_InertialSensor_MPU6000::data_interrupt(void)
     _new_data = 1;
 }
 
+#if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
 void AP_InertialSensor_MPU6000::hardware_init()
 {
     // MPU6000 chip select setup
@@ -462,6 +543,62 @@ void AP_InertialSensor_MPU6000::hardware_init()
 
     attachInterrupt(6,data_interrupt,RISING);
 }
+#else
+void AP_InertialSensor_MPU6000::hardware_init()
+{
+    // Chip reset
+    register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
+    delay(100);
+    // Wake up device and select GyroZ clock (better performance)
+    register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_ZGYRO);
+    delay(1);
+
+    register_write(MPUREG_PWR_MGMT_2, 0x00);            // only used for wake-up in accelerometer only low power mode
+    delay(1);
+
+    // SAMPLE RATE
+    register_write(MPUREG_SMPLRT_DIV, MPUREG_SMPLRT_200HZ);     // Sample rate = 200Hz    Fsample= 1Khz/(4+1) = 200Hz
+    delay(1);
+    // FS & DLPF   FS=2000º/s, DLPF = 98Hz (low pass filter)
+    register_write(MPUREG_CONFIG, BITS_DLPF_CFG_98HZ);
+    delay(1);
+    register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
+    delay(1);
+
+    _product_id = register_read(MPUREG_PRODUCT_ID);     // read the product ID rev c has 1/2 the sensitivity of rev d
+    //Serial.printf("Product_ID= 0x%x\n", (unsigned) _product_id);
+
+    if ((_product_id == MPU6000_REV_A4) ||
+        (_product_id == MPU6000ES_REV_C4) || (_product_id == MPU6000ES_REV_C5) ||
+        (_product_id == MPU6000_REV_C4)   || (_product_id == MPU6000_REV_C5)) {
+        // Accel scale 8g (4096 LSB/g)
+        // Rev C has different scaling than rev D
+        register_write(MPUREG_ACCEL_CONFIG,1<<3);
+    } else {
+        // Accel scale 8g (4096 LSB/g)
+        register_write(MPUREG_ACCEL_CONFIG,2<<3);
+    }
+    delay(1);
+
+    // Enable I2C bypass mode, to work with Magnetometer 5883L
+    // Disable I2C Master mode
+    uint8_t user_ctrl;
+    user_ctrl = register.read(MPUREG_USER_CTRL);
+    user_ctrl = user_ctrl & ~(1 << 5); // reset I2C_MST_EN bit
+    register.write(MPUREG_USER_CTRL, user_ctrl);
+    // Enable I2C Bypass mode
+    user_ctrl = register.read(MPUREG_INT_PIN_CFG);
+    user_ctrl = user_ctrl | (1 << 1); // set I2C_BYPASS_EN bit
+    user_ctrl = user_ctrl | (1 << 4); // clear interrupt on any read
+    register.write(MPUREG_INT_PIN_CFG, user_ctrl);
+
+    register_write(MPUREG_INT_ENABLE, BIT_RAW_RDY_EN);                  // configure interrupt to fire when new data arrives
+    delay(1);
+
+    attachInterrupt(6,data_interrupt,RISING);
+}
+
+#endif
 
 float AP_InertialSensor_MPU6000::_temp_to_celsius ( uint16_t regval )
 {

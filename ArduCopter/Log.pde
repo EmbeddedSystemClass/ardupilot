@@ -928,6 +928,8 @@ static void Log_Read(int16_t start_page, int16_t end_page)
 
  #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
     Serial.printf_P(PSTR("APM 2\n"));
+ #elif  CONFIG_APM_HARDWARE == CRIUS_AIO_PRO_V1
+    Serial.printf_P(PSTR("Crius AIO Pro V1\n"));
  #elif  CONFIG_APM_HARDWARE == APM2_BETA_HARDWARE
     Serial.printf_P(PSTR("APM 2Beta\n"));
  #else

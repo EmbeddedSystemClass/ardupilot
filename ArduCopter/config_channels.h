@@ -28,6 +28,10 @@
  # define CH_CAM_PITCH CH_11
  # define CH_CAM_ROLL  CH_10
  # define CH_CAM_YAW   CH_8
+#elif CONFIG_APM_HARDWARE == CRIUS_AIO_PRO_V1
+ # define CH_CAM_PITCH CH_11
+ # define CH_CAM_ROLL  CH_10
+ # define CH_CAM_YAW   CH_8
 #elif CONFIG_APM_HARDWARE == APM_HARDWARE_APM1
  # define CH_CAM_PITCH CH_5
  # define CH_CAM_ROLL  CH_6

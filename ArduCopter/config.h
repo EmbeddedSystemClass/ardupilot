@@ -65,6 +65,14 @@
  # else // APM2 Production Hardware (default)
   #  define CONFIG_BARO     AP_BARO_MS5611
  # endif
+#elif CONFIG_APM_HARDWARE == CRIUS_AIO_PRO_V1
+ # define CONFIG_IMU_TYPE   CONFIG_IMU_MPU6050
+ # define CONFIG_PUSHBUTTON DISABLED
+ # define CONFIG_RELAY      DISABLED
+ # define MAG_ORIENTATION   AP_COMPASS_APM2_SHIELD
+ # define CONFIG_SONAR_SOURCE SONAR_SOURCE_ANALOG_PIN
+ # define MAGNETOMETER ENABLED
+ # define CONFIG_BARO       AP_BARO_MS5611
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -96,6 +104,8 @@
  # ifndef CONFIG_MPU6000_CHIP_SELECT_PIN
   #  define CONFIG_MPU6000_CHIP_SELECT_PIN 53
  # endif
+#elif CONFIG_IMU_TYPE == CONFIG_IMU_MPU6050
+ # define MPU6050_ADDR 0x68
 #endif
 
 
@@ -155,6 +165,19 @@
  # define OPTFLOW_CS_PIN   A3
  # define BATTERY_PIN_1      1
  # define CURRENT_PIN_1      2
+#elif CONFIG_APM_HARDWARE == CRIUS_AIO_PRO_V1
+ # define A_LED_PIN        27
+ # define B_LED_PIN        26
+ # define C_LED_PIN        25
+ # define LED_ON           LOW
+ # define LED_OFF          HIGH
+ # define SLIDE_SWITCH_PIN (-1)
+ # define PUSHBUTTON_PIN   (-1)
+ # define CLI_SLIDER_ENABLED DISABLED
+ # define USB_MUX_PIN      23
+ # define OPTFLOW_CS_PIN   A3
+ # define BATTERY_PIN_1      1
+ # define CURRENT_PIN_1      2
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -186,6 +209,15 @@
  #define COPTER_LED_6 AN13      // Motor LED
  #define COPTER_LED_7 AN14      // Motor LED
  #define COPTER_LED_8 AN15      // Motor LED
+#elif CONFIG_APM_HARDWARE == CRIUS_AIO_PRO_V1
+ #define COPTER_LED_1 AN4       // Motor or Aux LED
+ #define COPTER_LED_2 AN5       // Motor LED or Beeper
+ #define COPTER_LED_3 AN6       // Motor or GPS LED
+ #define COPTER_LED_4 AN7       // Motor LED
+ #define COPTER_LED_5 AN8       // Motor LED
+ #define COPTER_LED_6 AN9       // Motor LED
+ #define COPTER_LED_7 AN10      // Motor LED
+ #define COPTER_LED_8 AN11      // Motor LED
 #endif
 
 

@@ -209,6 +209,10 @@ static void copter_leds_on(void) {
     if ( !bitRead(g.copter_leds_mode, 3) ) {
         digitalWrite(COPTER_LED_2, COPTER_LED_ON);
     }
+ #elif CONFIG_APM_HARDWARE == CRIUS_AIO_PRO_V1
+    if ( !bitRead(g.copter_leds_mode, 3) ) {
+        digitalWrite(COPTER_LED_2, COPTER_LED_ON);
+    }
  #else
     digitalWrite(COPTER_LED_2, COPTER_LED_ON);
  #endif
@@ -227,6 +231,10 @@ static void copter_leds_off(void) {
         digitalWrite(COPTER_LED_1, COPTER_LED_OFF);
     }
  #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+    if ( !bitRead(g.copter_leds_mode, 3) ) {
+        digitalWrite(COPTER_LED_2, COPTER_LED_OFF);
+    }
+ #elif CONFIG_APM_HARDWARE == CRIUS_AIO_PRO_V1
     if ( !bitRead(g.copter_leds_mode, 3) ) {
         digitalWrite(COPTER_LED_2, COPTER_LED_OFF);
     }
@@ -277,6 +285,10 @@ static void copter_leds_oscillate(void) {
         if ( !bitRead(g.copter_leds_mode, 3) ) {
             digitalWrite(COPTER_LED_2, COPTER_LED_ON);
         }
+ #elif CONFIG_APM_HARDWARE == CRIUS_AIO_PRO_V1
+        if ( !bitRead(g.copter_leds_mode, 3) ) {
+            digitalWrite(COPTER_LED_2, COPTER_LED_ON);
+        }
  #else
         digitalWrite(COPTER_LED_2, COPTER_LED_ON);
  #endif
@@ -293,6 +305,10 @@ static void copter_leds_oscillate(void) {
             digitalWrite(COPTER_LED_1, COPTER_LED_OFF);
         }
  #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+        if ( !bitRead(g.copter_leds_mode, 3) ) {
+            digitalWrite(COPTER_LED_2, COPTER_LED_OFF);
+        }
+ #elif CONFIG_APM_HARDWARE == CRIUS_AIO_PRO_V1
         if ( !bitRead(g.copter_leds_mode, 3) ) {
             digitalWrite(COPTER_LED_2, COPTER_LED_OFF);
         }

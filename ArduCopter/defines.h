@@ -418,10 +418,12 @@ enum gcs_severity {
 // IMU selection
 #define CONFIG_IMU_OILPAN 1
 #define CONFIG_IMU_MPU6000 2
+#define CONFIG_IMU_MPU6050 3
 
 // APM Hardware selection
 #define APM_HARDWARE_APM1 1
 #define APM_HARDWARE_APM2 2
+#define CRIUS_AIO_PRO_V1  3
 
 #define AP_BARO_BMP085    1
 #define AP_BARO_MS5611    2

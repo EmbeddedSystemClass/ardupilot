@@ -161,6 +161,8 @@ static void update_events(void);
 ////////////////////////////////////////////////////////////////////////////////
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 APM_RC_APM2 APM_RC;
+#elif CONFIG_APM_HARDWARE == CRIUS_AIO_PRO_V1
+APM_RC_APM2 APM_RC;
 #else
 APM_RC_APM1 APM_RC;
 #endif
@@ -169,6 +171,8 @@ APM_RC_APM1 APM_RC;
 // Dataflash
 ////////////////////////////////////////////////////////////////////////////////
 #if CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
+DataFlash_APM2 DataFlash;
+#elif CONFIG_APM_HARDWARE == CRIUS_AIO_PRO_V1
 DataFlash_APM2 DataFlash;
 #else
 DataFlash_APM1 DataFlash;
@@ -259,6 +263,8 @@ AP_GPS_None     g_gps_driver(NULL);
 
  #if CONFIG_IMU_TYPE == CONFIG_IMU_MPU6000
 AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
+ #elif CONFIG_IMU_TYPE == CONFIG_IMU_MPU6050
+AP_InertialSensor_MPU6000 ins( MPU6050_ADDR );
  #else
 AP_InertialSensor_Oilpan ins(&adc);
  #endif
@@ -270,6 +276,8 @@ static GPS         *g_gps_null;
 
  #if DMP_ENABLED == ENABLED && CONFIG_APM_HARDWARE == APM_HARDWARE_APM2
 AP_AHRS_MPU6000  ahrs(&imu, g_gps, &ins);               // only works with APM2
+ #elif DMP_ENABLED == ENABLED && CONFIG_APM_HARDWARE == CRIUS_AIO_PRO_V1
+AP_AHRS_MPU6000  ahrs(&imu, g_gps, &ins);               // works with CRIUS AIO PRO V1
  #else
 AP_AHRS_DCM ahrs(&imu, g_gps);
  #endif

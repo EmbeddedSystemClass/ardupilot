@@ -4,6 +4,7 @@
 
 //#define CONFIG_APM_HARDWARE APM_HARDWARE_APM2
 //#define APM2_BETA_HARDWARE
+#define CONFIG_APM_HARDWARE CRIUS_AIO_PRO_V1
 
 // GPS is auto-selected
 
